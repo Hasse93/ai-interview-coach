@@ -115,6 +115,23 @@ Push to GitHub and import into [Vercel](https://vercel.com/new) (framework auto-
 npm i -g vercel && vercel        # or deploy from the dashboard
 ```
 
+## ⚡ Scaling & performance
+
+The app is a stateless Next.js full-stack app, so the web/API tier auto-scales on Vercel. The work that's been done and the known limits:
+
+**Implemented**
+- **Streaming responses** — conversation mode streams the interviewer's reply token-by-token (Server-driven `ReadableStream`), so it feels instant instead of waiting on a spinner.
+- **Rate limiting** — every AI route is guarded by a sliding-window limiter (`src/lib/rateLimit.ts`) to protect quota and curb abuse. Returns `429` with `Retry-After`.
+- **Graceful degradation** — if the AI provider is unavailable or quota is hit, routes fall back to a deterministic engine instead of erroring.
+- **Informative loading states** to reduce perceived latency on the non-streamed (structured JSON) calls.
+
+**For real production traffic, switch these on:**
+1. **Paid Gemini tier** — the free tier is ~10–15 requests/minute *shared across all users*; the biggest bottleneck under load. A paid key raises this to thousands/min.
+2. **Pooled database connection** — serverless can exhaust Postgres connections. Use Neon's **pooled** endpoint (the `-pooler` host) for `DATABASE_URL`, e.g. `...@ep-xxx-pooler.region.aws.neon.tech/db?sslmode=require`.
+3. **Distributed rate limiting** — the in-memory limiter is per-instance; for a global limit across serverless instances, swap in Upstash Redis (`@upstash/ratelimit`) at the same call site.
+
+**Why CV analysis / question generation take a few seconds:** that's LLM generation time — the model reads the input and writes a full structured response token-by-token (CV analysis is slowest: long input + long output + PDF parsing). Network round-trips and serverless cold starts add a little. Streaming hides this for conversational replies; the structured JSON calls need the full response before rendering their cards, so they show a progress indicator instead.
+
 ## 🗺️ Roadmap ideas
 
 - Postgres + Prisma for cross-device history & accounts

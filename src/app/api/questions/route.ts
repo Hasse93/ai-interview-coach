@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import { complete, hasApiKey, parseJson } from "@/lib/ai";
 import { fallbackQuestions } from "@/lib/fallback";
 import { questionsPrompt } from "@/lib/prompts";
+import { rateLimited } from "@/lib/rateLimit";
 import { SetupSchema, type Question } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const limited = rateLimited(req);
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = SetupSchema.safeParse(body);
   if (!parsed.success) {

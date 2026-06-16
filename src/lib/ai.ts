@@ -67,6 +67,36 @@ async function completeGemini(prompt: string, opts: CompleteOpts): Promise<strin
   return res.text ?? "";
 }
 
+/**
+ * Stream the active provider's text output chunk by chunk. Falls back to a
+ * single full chunk for providers without streaming, and throws for "none"
+ * so the caller can serve its deterministic fallback.
+ */
+export async function* completeStream(
+  prompt: string,
+  opts: CompleteOpts = {},
+): AsyncGenerator<string> {
+  const provider = activeProvider();
+  if (provider === "gemini") {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+    const stream = await ai.models.generateContentStream({
+      model: GEMINI_MODEL,
+      contents: prompt,
+      config: { maxOutputTokens: opts.maxTokens ?? 800, thinkingConfig: { thinkingBudget: 0 } },
+    });
+    for await (const chunk of stream) {
+      if (chunk.text) yield chunk.text;
+    }
+    return;
+  }
+  if (provider === "anthropic") {
+    // Single chunk — keeps the streaming interface without provider-specific code.
+    yield await completeAnthropic(prompt, opts);
+    return;
+  }
+  throw new Error("No AI provider configured");
+}
+
 async function completeAnthropic(prompt: string, opts: CompleteOpts): Promise<string> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const msg = await client.messages.create({

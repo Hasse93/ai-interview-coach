@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import { complete, hasApiKey, parseJson } from "@/lib/ai";
 import { fallbackEvaluate } from "@/lib/fallback";
 import { evaluatePrompt } from "@/lib/prompts";
+import { rateLimited } from "@/lib/rateLimit";
 import { EvaluateSchema, FeedbackSchema, type Feedback } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const limited = rateLimited(req);
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = EvaluateSchema.safeParse(body);
   if (!parsed.success) {

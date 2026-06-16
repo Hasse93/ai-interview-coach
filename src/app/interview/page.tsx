@@ -181,18 +181,31 @@ export default function InterviewPage() {
   async function sendToInterviewer(history: ChatMessage[]) {
     setChatLoading(true);
     setError(null);
+    // Optimistic empty interviewer bubble that fills as tokens stream in.
+    setMessages([...history, { role: "interviewer", content: "" }]);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ role, seniority, interviewType, cvText, messages: history }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Chat failed");
-      setDemoMode((d) => d || Boolean(data.demoMode));
-      setMessages([...history, { role: "interviewer", content: data.reply }]);
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Chat failed");
+      }
+      setDemoMode((d) => d || res.headers.get("x-demo-mode") === "true");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let acc = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        acc += decoder.decode(value, { stream: true });
+        setMessages([...history, { role: "interviewer", content: acc }]);
+      }
     } catch (e: any) {
       setError(e.message ?? "Chat failed");
+      setMessages(history); // drop the placeholder on failure
     } finally {
       setChatLoading(false);
     }
@@ -498,13 +511,25 @@ function SetupView(p: any) {
   );
 }
 
+const LOADING_STEPS = [
+  "Reviewing the role and level…",
+  "Thinking like an interviewer…",
+  "Calibrating difficulty…",
+  "Putting it together…",
+];
+
 function LoadingView() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setI((p) => (p + 1) % LOADING_STEPS.length), 1400);
+    return () => clearInterval(id);
+  }, []);
   return (
     <div className="glass grid min-h-[320px] place-items-center p-10 text-center">
       <div>
         <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-white/10 border-t-brand-400" />
-        <p className="mt-5 text-sm text-slate-300">Thinking it through…</p>
-        <p className="mt-1 text-xs text-slate-500">The coach is working on it.</p>
+        <p className="mt-5 text-sm text-slate-300 transition-opacity">{LOADING_STEPS[i]}</p>
+        <p className="mt-1 text-xs text-slate-500">This usually takes a few seconds.</p>
       </div>
     </div>
   );
@@ -668,19 +693,18 @@ function ChatView(p: {
                 {m.role === "interviewer" && (
                   <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-brand-300">Interviewer</div>
                 )}
-                {m.content}
+                {m.role === "interviewer" && m.content === "" ? (
+                  <span className="flex gap-1.5 py-1">
+                    {[0, 1, 2].map((d) => (
+                      <span key={d} className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: `${d * 0.15}s` }} />
+                    ))}
+                  </span>
+                ) : (
+                  m.content
+                )}
               </div>
             </div>
           ))}
-          {p.chatLoading && (
-            <div className="flex justify-start">
-              <div className="flex gap-1.5 rounded-2xl rounded-bl-sm border border-white/10 bg-white/[0.04] px-4 py-3">
-                {[0, 1, 2].map((d) => (
-                  <span key={d} className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: `${d * 0.15}s` }} />
-                ))}
-              </div>
-            </div>
-          )}
           <div ref={endRef} />
         </div>
 

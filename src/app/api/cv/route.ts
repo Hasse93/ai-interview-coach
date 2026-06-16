@@ -3,11 +3,15 @@ import { complete, hasApiKey, parseJson } from "@/lib/ai";
 import { extractCvText } from "@/lib/cv";
 import { fallbackCvAnalysis } from "@/lib/fallback";
 import { cvAnalysisPrompt } from "@/lib/prompts";
+import { rateLimited } from "@/lib/rateLimit";
 import { CvAnalysisSchema, type CvAnalysis } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const limited = rateLimited(req);
+  if (limited) return limited;
+
   let cvText = "";
   let role = "Software Engineer";
   let seniority = "mid";

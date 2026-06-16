@@ -75,7 +75,7 @@ describe("POST /api/cv (JSON/text path)", () => {
 });
 
 describe("POST /api/chat", () => {
-  it("returns an interviewer opening line in demo mode", async () => {
+  it("streams an interviewer opening line in demo mode", async () => {
     const { POST } = await import("@/app/api/chat/route");
     const res = await POST(post("http://t/api/chat", {
       role: "SWE",
@@ -84,10 +84,9 @@ describe("POST /api/chat", () => {
       messages: [],
     }));
     expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.demoMode).toBe(true);
-    expect(typeof data.reply).toBe("string");
-    expect(data.reply.length).toBeGreaterThan(5);
+    expect(res.headers.get("x-demo-mode")).toBe("true");
+    const text = await res.text();
+    expect(text.trim().length).toBeGreaterThan(5);
   });
 
   it("rejects an invalid chat request", async () => {
