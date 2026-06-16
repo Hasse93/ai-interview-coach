@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { complete, hasApiKey, parseJson } from "@/lib/ai";
 import { extractCvText } from "@/lib/cv";
+import { trySemanticScore } from "@/lib/embeddings";
 import { fallbackCvAnalysis } from "@/lib/fallback";
 import { cvAnalysisPrompt } from "@/lib/prompts";
 import { rateLimited } from "@/lib/rateLimit";
@@ -46,17 +47,26 @@ export async function POST(req: Request) {
     );
   }
 
+  // Local ML: semantic match of the CV against the target role (0–100).
+  const target = `${seniority} ${role} — required skills, experience and responsibilities`;
+  const semanticFitPromise = trySemanticScore(cvText, target);
+
   if (!hasApiKey()) {
-    return NextResponse.json({ analysis: fallbackCvAnalysis(cvText, role), cvText, demoMode: true });
+    const [semanticFit] = await Promise.all([semanticFitPromise]);
+    return NextResponse.json({ analysis: fallbackCvAnalysis(cvText, role), semanticFit, cvText, demoMode: true });
   }
 
   try {
-    const raw = await complete(cvAnalysisPrompt(cvText, role, seniority), { json: true });
+    const [raw, semanticFit] = await Promise.all([
+      complete(cvAnalysisPrompt(cvText, role, seniority), { json: true }),
+      semanticFitPromise,
+    ]);
     const data = parseJson<Partial<CvAnalysis>>(raw);
     const validated = CvAnalysisSchema.safeParse(data);
     if (!validated.success) throw new Error("bad cv analysis shape");
-    return NextResponse.json({ analysis: validated.data, cvText, demoMode: false });
+    return NextResponse.json({ analysis: validated.data, semanticFit, cvText, demoMode: false });
   } catch {
-    return NextResponse.json({ analysis: fallbackCvAnalysis(cvText, role), cvText, demoMode: true });
+    const semanticFit = await semanticFitPromise;
+    return NextResponse.json({ analysis: fallbackCvAnalysis(cvText, role), semanticFit, cvText, demoMode: true });
   }
 }

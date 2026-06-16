@@ -21,6 +21,7 @@ Requests flow top-down: the React frontend calls **Next.js API routes** (every c
 | | |
 |---|---|
 | 📄 **CV upload & analysis** | Upload a PDF/text CV → AI scores fit and lists strengths, gaps, and focus areas. Questions are then tailored to your CV. |
+| 🧮 **Semantic matching (local ML)** | An on-device embedding model + cosine similarity scores **CV ↔ role fit** and **answer ↔ question relevance** — no API, no cost, works even when the LLM is rate-limited. |
 | 🧠 **Tailored questions** | Pick role, seniority, and interview type, or paste a job description. |
 | 💬 **3 interview types** | Behavioral, Technical, and System Design. |
 | 🎯💬 **Two practice modes** | **Structured** (Q → answer → scored feedback) or **Conversation** (free-flowing chat with an AI interviewer). |
@@ -40,6 +41,7 @@ Requests flow top-down: the React frontend calls **Next.js API routes** (every c
 - **AI provider:** **Google Gemini** (`gemini-2.0-flash`) primary via `@google/genai`, **Anthropic Claude** (`claude-opus-4-8`) fallback via `@anthropic-ai/sdk` — selected automatically by which API key is present, with a graceful no-key deterministic fallback. Provider logic is isolated in `src/lib/ai.ts`.
 - **Auth:** Auth.js (NextAuth v5) — email/password credentials, JWT sessions, `bcryptjs` hashing
 - **Database:** Prisma ORM — **SQLite** for local dev (zero setup), **Postgres** (Neon/Supabase) for production
+- **Machine learning:** **Transformers.js** (`@xenova/transformers`) running `all-MiniLM-L6-v2` sentence embeddings **locally** + cosine similarity — for semantic CV/role matching and answer relevance (`src/lib/embeddings.ts`). No external API, no cost.
 - **CV parsing:** `pdf-parse` (server-side PDF → text)
 - **PWA:** Next.js `manifest.webmanifest` + SVG app icon, mobile-responsive layout
 - **Validation:** Zod schemas shared between client and API
@@ -122,6 +124,21 @@ Push to GitHub and import into [Vercel](https://vercel.com/new) (framework auto-
 ```bash
 npm i -g vercel && vercel        # or deploy from the dashboard
 ```
+
+## 🧮 Machine learning — semantic matching
+
+Beyond the LLM, the app runs a **classic ML pipeline locally** (no API, no cost):
+
+1. Text (a CV, or a candidate's answer) is encoded into a **384-dimension embedding vector** by `all-MiniLM-L6-v2`, run in-process with **Transformers.js**.
+2. **Cosine similarity** between vectors produces a 0–100 score.
+
+It powers two features:
+- **CV ↔ role fit** — how semantically close your CV is to the target role.
+- **Answer ↔ question relevance** — an "on-topic" score for each answer (e.g. an on-topic React answer scored **57%** vs **2%** for an off-topic one in testing).
+
+The model loads lazily and is cached; every call **degrades gracefully** (returns `null`) if the model is unavailable, so it never blocks a response — and it keeps working even when the LLM is rate-limited. Code: [`src/lib/embeddings.ts`](src/lib/embeddings.ts).
+
+> **Production note:** the model (~23 MB) loads at runtime, which adds cold-start time on serverless. For heavy traffic, precompute embeddings or move them to a dedicated embedding service; the call sites are isolated in one module.
 
 ## ⚡ Scaling & performance
 

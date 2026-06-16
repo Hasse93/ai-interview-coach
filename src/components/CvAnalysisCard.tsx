@@ -1,16 +1,33 @@
 import { ScoreRing } from "./ScoreRing";
 import type { CvAnalysis } from "@/lib/types";
 
-export function CvAnalysisCard({ analysis }: { analysis: CvAnalysis }) {
+export function CvAnalysisCard({
+  analysis,
+  semanticFit,
+}: {
+  analysis: CvAnalysis;
+  semanticFit?: number | null;
+}) {
   return (
     <div className="glass animate-fade-up mt-4 p-5 sm:p-6">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-        <ScoreRing score={analysis.fitScore} label="CV fit" />
+        <div className="flex items-center gap-4">
+          <ScoreRing score={analysis.fitScore} label="AI fit" />
+          {typeof semanticFit === "number" && (
+            <ScoreRing score={semanticFit} label="match" size={96} />
+          )}
+        </div>
         <div className="flex-1">
           <div className="text-xs font-semibold uppercase tracking-wider text-accent-400">
             CV analysis
           </div>
           <p className="mt-1.5 text-sm leading-relaxed text-slate-300">{analysis.summary}</p>
+          {typeof semanticFit === "number" && (
+            <p className="mt-2 text-xs text-slate-500">
+              <span className="font-medium text-slate-400">Semantic match</span> — a local embedding
+              model (cosine similarity) scoring how closely your CV aligns with the target role.
+            </p>
+          )}
         </div>
       </div>
 

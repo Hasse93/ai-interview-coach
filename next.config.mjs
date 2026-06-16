@@ -2,9 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    // pdf-parse is CommonJS and reads files at runtime — keep it external so
-    // the bundler doesn't try to trace its optional test fixtures.
-    serverComponentsExternalPackages: ["pdf-parse"],
+    // Keep native/runtime-heavy packages external so the bundler doesn't try
+    // to trace them: pdf-parse (test fixtures) and the Transformers.js stack
+    // (onnxruntime + model weights loaded at runtime).
+    serverComponentsExternalPackages: ["pdf-parse", "@xenova/transformers", "onnxruntime-node", "sharp"],
   },
 };
 

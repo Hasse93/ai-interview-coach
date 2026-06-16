@@ -49,6 +49,7 @@ export default function InterviewPage() {
   // CV
   const [cvText, setCvText] = useState("");
   const [cvAnalysis, setCvAnalysis] = useState<CvAnalysis | null>(null);
+  const [cvSemanticFit, setCvSemanticFit] = useState<number | null>(null);
   const [cvLoading, setCvLoading] = useState(false);
   const [cvName, setCvName] = useState("");
 
@@ -105,6 +106,7 @@ export default function InterviewPage() {
       if (!res.ok) throw new Error(data.error || "Couldn't analyze the CV");
       setCvText(data.cvText);
       setCvAnalysis(data.analysis);
+      setCvSemanticFit(typeof data.semanticFit === "number" ? data.semanticFit : null);
       setDemoMode((d) => d || data.demoMode);
     } catch (e: any) {
       setError(e.message ?? "CV analysis failed");
@@ -326,7 +328,7 @@ export default function InterviewPage() {
             {...{
               role, setRole, seniority, setSeniority, interviewType, setInterviewType,
               jobDescription, setJobDescription, count, setCount, mode, setMode,
-              cvAnalysis, cvLoading, cvName, analyzeCv, startInterview,
+              cvAnalysis, cvSemanticFit, cvLoading, cvName, analyzeCv, startInterview,
             }}
           />
         )}
@@ -481,7 +483,7 @@ function SetupView(p: any) {
               <>⬆️ Upload a PDF or text CV</>
             )}
           </button>
-          {p.cvAnalysis && <CvAnalysisCard analysis={p.cvAnalysis} />}
+          {p.cvAnalysis && <CvAnalysisCard analysis={p.cvAnalysis} semanticFit={p.cvSemanticFit} />}
         </div>
 
         <div>
@@ -604,12 +606,20 @@ function FeedbackCard({ feedback, onNext, isLast }: { feedback: Feedback; onNext
         <div className="flex-1">
           <div className="text-xs font-semibold uppercase tracking-wider text-accent-400">Coach feedback</div>
           <p className="mt-1.5 text-lg font-medium leading-snug">{feedback.verdict}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {(["situation", "task", "action", "result"] as const).map((k) => (
               <span key={k} className={`rounded-lg px-2.5 py-1 text-xs font-medium capitalize ${star[k] ? "bg-accent-500/20 text-accent-400" : "bg-white/5 text-slate-500"}`}>
                 {star[k] ? "✓" : "○"} {k}
               </span>
             ))}
+            {typeof feedback.relevance === "number" && (
+              <span
+                className="rounded-lg bg-brand-500/15 px-2.5 py-1 text-xs font-medium text-brand-200"
+                title="Embedding-based cosine similarity between your answer and the question"
+              >
+                ◎ {feedback.relevance}% on-topic
+              </span>
+            )}
           </div>
         </div>
       </div>

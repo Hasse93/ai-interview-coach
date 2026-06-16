@@ -54,6 +54,9 @@ export const FeedbackSchema = z.object({
   modelAnswer: z.string(),
   followUp: z.string(),
   demoMode: z.boolean(),
+  // ML-derived: cosine similarity of the answer vs the question (0–100), or
+  // null when the local embedding model is unavailable. Attached server-side.
+  relevance: z.number().int().min(0).max(100).nullable().optional(),
 });
 export type Feedback = z.infer<typeof FeedbackSchema>;
 
