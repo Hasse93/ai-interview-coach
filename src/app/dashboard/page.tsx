@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ScoreRing } from "@/components/ScoreRing";
-import { clearHistory, loadHistory, type HistoryEntry } from "@/lib/storage";
+import { clearHistory, type HistoryEntry } from "@/lib/storage";
+import { fetchHistory } from "@/lib/history";
+import { useUser } from "@/lib/useUser";
 import type { InterviewType } from "@/lib/types";
 
 const TYPE_LABEL: Record<InterviewType, string> = {
@@ -13,7 +15,10 @@ const TYPE_LABEL: Record<InterviewType, string> = {
 
 export default function DashboardPage() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  useEffect(() => setHistory(loadHistory()), []);
+  const { user } = useUser();
+  useEffect(() => {
+    fetchHistory(user).then(setHistory);
+  }, [user]);
 
   const stats = useMemo(() => {
     if (!history.length) return null;

@@ -57,6 +57,25 @@ export const FeedbackSchema = z.object({
 });
 export type Feedback = z.infer<typeof FeedbackSchema>;
 
+/* ----------------------------- Auth ----------------------------- */
+
+export const SignupSchema = z.object({
+  name: z.string().min(1).max(80).optional().default(""),
+  email: z.string().email().max(160),
+  password: z.string().min(8).max(200),
+});
+export type SignupInput = z.infer<typeof SignupSchema>;
+
+/** Payload for persisting a finished interview report to the DB. */
+export const SaveSessionSchema = z.object({
+  role: z.string().min(2).max(120),
+  seniority: z.enum(SeniorityLevels),
+  interviewType: z.enum(InterviewTypes),
+  overallScore: z.number().int().min(0).max(100),
+  report: z.any(),
+});
+export type SaveSessionInput = z.infer<typeof SaveSessionSchema>;
+
 /* ----------------------------- CV analysis ----------------------------- */
 
 export const CvAnalysisSchema = z.object({

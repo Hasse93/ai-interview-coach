@@ -9,3 +9,9 @@ build
 coverage
 .vercel
 next-env.d.ts
+
+# Prisma local SQLite dev database (migrations ARE committed)
+prisma/dev.db
+prisma/dev.db-journal
+*.db
+*.db-journal

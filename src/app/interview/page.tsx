@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ScoreRing } from "@/components/ScoreRing";
 import { CvAnalysisCard } from "@/components/CvAnalysisCard";
 import { useSpeech } from "@/lib/useSpeech";
-import { loadHistory, saveSession, clearHistory, type HistoryEntry } from "@/lib/storage";
+import { clearHistory, type HistoryEntry } from "@/lib/storage";
+import { fetchHistory, persistSession } from "@/lib/history";
+import { useUser } from "@/lib/useUser";
 import {
   InterviewTypes,
   SeniorityLevels,
@@ -73,7 +75,10 @@ export default function InterviewPage() {
   phaseRef.current = phase;
   const speech = useSpeech((t) => (phaseRef.current === "chat" ? setChatInput(t) : setAnswer(t)));
 
-  useEffect(() => setHistory(loadHistory()), []);
+  const { user } = useUser();
+  useEffect(() => {
+    fetchHistory(user).then(setHistory);
+  }, [user]);
 
   const progress = questions.length ? Math.round((idx / questions.length) * 100) : 0;
 
@@ -251,7 +256,8 @@ export default function InterviewPage() {
         overallScore: data.overallScore,
         report: data,
       };
-      setHistory(saveSession(entry));
+      await persistSession(entry, user);
+      setHistory(await fetchHistory(user));
       setPhase("report");
     } catch (e: any) {
       setError(e.message ?? "Report failed");
@@ -336,6 +342,7 @@ export default function InterviewPage() {
 
       <HistorySidebar
         history={history}
+        signedIn={Boolean(user)}
         onClear={() => {
           clearHistory();
           setHistory([]);
@@ -754,13 +761,20 @@ function ReportView({
   );
 }
 
-function HistorySidebar({ history, onClear }: { history: HistoryEntry[]; onClear: () => void }) {
+function HistorySidebar({ history, signedIn, onClear }: { history: HistoryEntry[]; signedIn: boolean; onClear: () => void }) {
   const avg = useMemo(
     () => (history.length ? Math.round(history.reduce((s, h) => s + h.overallScore, 0) / history.length) : 0),
     [history],
   );
   return (
     <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+      {!signedIn && (
+        <div className="glass border-brand-400/20 bg-brand-500/10 p-4 text-xs text-slate-300">
+          <span className="font-semibold text-brand-200">Saving locally.</span>{" "}
+          <a href="/signup" className="text-brand-300 underline">Create an account</a> to sync your
+          history across your laptop and phone.
+        </div>
+      )}
       <div className="glass p-5">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">Your progress</h3>

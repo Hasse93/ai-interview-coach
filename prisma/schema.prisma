@@ -1,0 +1,39 @@
+// Prisma schema.
+//
+// LOCAL DEV uses SQLite (zero setup — works out of the box).
+// PRODUCTION (cross-device sync): switch `provider` to "postgresql" and point
+// DATABASE_URL at a Neon/Supabase connection string. The models below are
+// Postgres-compatible as-is (report payload is stored as a JSON string, so no
+// SQLite/Postgres type differences).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String            @id @default(cuid())
+  email     String            @unique
+  name      String?
+  password  String // bcrypt hash
+  createdAt DateTime          @default(now())
+  reports   InterviewReport[]
+}
+
+model InterviewReport {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role          String
+  seniority     String
+  interviewType String
+  overallScore  Int
+  data          String // JSON-serialized ReportResponse
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}

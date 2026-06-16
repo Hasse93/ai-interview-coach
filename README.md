@@ -21,28 +21,44 @@ Built as a full-stack portfolio project: **Next.js 14 · TypeScript · Gemini (p
 | 🔁 **Adaptive follow-ups** | The coach reacts to your answer with a realistic follow-up. |
 | 📊 **Performance report** | Overall score, dimension breakdown, and prioritized action items. |
 | 📈 **Progress dashboard** | Score-trend chart, averages by interview type, and weakest-skills breakdown. |
-| 🛟 **Demo mode** | Runs fully without an API key using a deterministic built-in engine. |
+| 👤 **Accounts & cross-device sync** | Sign up (email + password) to save reports to a database and pick up on any device. Logged-out users fall back to localStorage. |
+| 📱 **Installable PWA** | Responsive down to mobile, with a web app manifest + icons so it can be "Add to Home Screen" installed. |
+| 🛟 **Demo mode** | Runs fully without an API key **or** database using deterministic engines + localStorage. |
 
 ## 🏗️ Tech stack
 
 - **Framework:** Next.js 14 (App Router) — full-stack React in one deployable unit
 - **Language:** TypeScript (strict)
 - **AI provider:** **Google Gemini** (`gemini-2.0-flash`) primary via `@google/genai`, **Anthropic Claude** (`claude-opus-4-8`) fallback via `@anthropic-ai/sdk` — selected automatically by which API key is present, with a graceful no-key deterministic fallback. Provider logic is isolated in `src/lib/ai.ts`.
+- **Auth:** Auth.js (NextAuth v5) — email/password credentials, JWT sessions, `bcryptjs` hashing
+- **Database:** Prisma ORM — **SQLite** for local dev (zero setup), **Postgres** (Neon/Supabase) for production
 - **CV parsing:** `pdf-parse` (server-side PDF → text)
+- **PWA:** Next.js `manifest.webmanifest` + SVG app icon, mobile-responsive layout
 - **Validation:** Zod schemas shared between client and API
 - **Styling:** Tailwind CSS — glassmorphism, dark gradient theme, custom animations
-- **Testing:** Vitest — 28 tests (unit + all 5 API routes)
+- **Testing:** Vitest — 28 tests (unit + API routes)
 - **Deployment:** Vercel (zero-config)
 
 ## 🚀 Getting started
 
 ```bash
 npm install
-cp .env.example .env.local   # optional — add GEMINI_API_KEY for live AI
-npm run dev                  # http://localhost:3000
+cp .env.example .env          # sets DATABASE_URL=file:./dev.db (SQLite)
+npx auth secret               # writes AUTH_SECRET into your env
+npx prisma migrate dev        # creates the local SQLite database
+npm run dev                   # http://localhost:3000
 ```
 
-> Without an API key the app runs in **demo mode** — fully functional, using a deterministic question/feedback engine. Add a **free** `GEMINI_API_KEY` ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) to `.env.local` to switch on live AI. Provider precedence: `GEMINI_API_KEY` → `ANTHROPIC_API_KEY` → demo.
+> **No API key needed** to start — the app runs in **demo mode** using a deterministic engine. Add a **free** `GEMINI_API_KEY` ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) for live AI. Provider precedence: `GEMINI_API_KEY` → `ANTHROPIC_API_KEY` → demo.
+>
+> **Accounts are optional** — without `AUTH_SECRET`/a database the app still works and saves history to `localStorage`. With them, sign-up enables cross-device sync.
+
+### Going to production (cross-device sync)
+
+1. Create a free Postgres database ([Neon](https://neon.tech) or [Supabase](https://supabase.com)).
+2. In `prisma/schema.prisma`, change `provider = "sqlite"` → `provider = "postgresql"`.
+3. Set `DATABASE_URL` to your Postgres connection string and run `npx prisma migrate deploy`.
+4. Set `AUTH_SECRET` and `GEMINI_API_KEY` in your host's environment.
 
 ## 🧪 Testing
 
@@ -55,27 +71,37 @@ Covers JSON parsing/recovery, the deterministic scoring engine, and all three AP
 ## 📂 Architecture
 
 ```
+prisma/schema.prisma         User + InterviewReport models
 src/
 ├─ app/
 │  ├─ page.tsx              Landing page
 │  ├─ interview/page.tsx    Setup → session/chat → report flow (client)
 │  ├─ dashboard/page.tsx    Progress dashboard (trend chart, breakdowns)
+│  ├─ login,signup/page.tsx Auth pages
+│  ├─ manifest.ts, icon.svg PWA manifest + app icon
 │  └─ api/
+│     ├─ auth/[...nextauth] Auth.js handler
+│     ├─ signup/route.ts    Create account (bcrypt)
+│     ├─ me/route.ts        Current-user lookup
+│     ├─ sessions/route.ts  Save / list reports (DB, auth-guarded)
 │     ├─ cv/route.ts        Parse + analyze an uploaded CV
 │     ├─ questions/route.ts Generate tailored questions
 │     ├─ evaluate/route.ts  Score a single answer
 │     ├─ chat/route.ts      Conversation-mode interviewer turns
 │     └─ report/route.ts    Build the final report
-├─ components/
-│  ├─ ScoreRing.tsx         Animated SVG score gauge
-│  └─ CvAnalysisCard.tsx    CV strengths/weaknesses card
+├─ components/   ScoreRing, CvAnalysisCard, HeaderNav, AuthShell
 └─ lib/
    ├─ ai.ts        Provider-agnostic client (Gemini→Claude) + JSON recovery
+   ├─ auth.ts      Auth.js config (credentials + JWT)
+   ├─ db.ts        Prisma client singleton
+   ├─ session.ts   Safe getCurrentUser() wrapper
+   ├─ history.ts   DB-or-localStorage history layer
    ├─ prompts.ts   Prompt templates
    ├─ fallback.ts  Deterministic demo-mode engine
    ├─ cv.ts        PDF/text extraction
    ├─ types.ts     Zod schemas + shared types
    ├─ useSpeech.ts Web Speech API hook
+   ├─ useUser.ts   Client auth-state hook
    └─ storage.ts   Local history persistence
 ```
 
