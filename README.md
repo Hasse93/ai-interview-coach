@@ -40,7 +40,7 @@ Requests flow top-down: the React frontend calls **Next.js API routes** (every c
 - **Language:** TypeScript (strict)
 - **AI provider:** **Google Gemini** (`gemini-2.0-flash`) primary via `@google/genai`, **Anthropic Claude** (`claude-opus-4-8`) fallback via `@anthropic-ai/sdk` — selected automatically by which API key is present, with a graceful no-key deterministic fallback. Provider logic is isolated in `src/lib/ai.ts`.
 - **Auth:** Auth.js (NextAuth v5) — email/password credentials, JWT sessions, `bcryptjs` hashing
-- **Database:** Prisma ORM — **SQLite** for local dev (zero setup), **Postgres** (Neon/Supabase) for production
+- **Database:** **PostgreSQL** (Neon) via **Prisma ORM** — pooled (PgBouncer) connection at runtime, direct connection for migrations
 - **Machine learning:** **Transformers.js** (`@xenova/transformers`) running `all-MiniLM-L6-v2` sentence embeddings **locally** + cosine similarity — for semantic CV/role matching and answer relevance (`src/lib/embeddings.ts`). No external API, no cost.
 - **CV parsing:** `pdf-parse` (server-side PDF → text)
 - **PWA:** Next.js `manifest.webmanifest` + SVG app icon, mobile-responsive layout
@@ -53,22 +53,20 @@ Requests flow top-down: the React frontend calls **Next.js API routes** (every c
 
 ```bash
 npm install
-cp .env.example .env          # sets DATABASE_URL=file:./dev.db (SQLite)
-npx auth secret               # writes AUTH_SECRET into your env
-npx prisma migrate dev        # creates the local SQLite database
+cp .env.example .env          # fill in DATABASE_URL + DIRECT_URL (Neon), AUTH_SECRET, GEMINI_API_KEY
+npx prisma migrate deploy     # apply the schema to your database
 npm run dev                   # http://localhost:3000
 ```
 
 > **No API key needed** to start — the app runs in **demo mode** using a deterministic engine. Add a **free** `GEMINI_API_KEY` ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) for live AI. Provider precedence: `GEMINI_API_KEY` → `ANTHROPIC_API_KEY` → demo.
 >
-> **Accounts are optional** — without `AUTH_SECRET`/a database the app still works and saves history to `localStorage`. With them, sign-up enables cross-device sync.
+> **Accounts are optional** — without a database/`AUTH_SECRET` the app still works and saves history to `localStorage`. With them, sign-up enables cross-device sync.
 
-### Going to production (cross-device sync)
+### Database (Neon Postgres)
 
-1. Create a free Postgres database ([Neon](https://neon.tech) or [Supabase](https://supabase.com)).
-2. In `prisma/schema.prisma`, change `provider = "sqlite"` → `provider = "postgresql"`.
-3. Set `DATABASE_URL` to your Postgres connection string and run `npx prisma migrate deploy`.
-4. Set `AUTH_SECRET` and `GEMINI_API_KEY` in your host's environment.
+1. Create a free database at [Neon](https://neon.tech).
+2. Set `DATABASE_URL` to the **pooled** connection string (host contains `-pooler`) and `DIRECT_URL` to the **direct** one (same string without `-pooler`).
+3. Run `npx prisma migrate deploy` to create the tables.
 
 ## 🧪 Testing
 

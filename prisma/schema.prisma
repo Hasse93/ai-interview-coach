@@ -1,18 +1,18 @@
 // Prisma schema.
 //
-// LOCAL DEV uses SQLite (zero setup — works out of the box).
-// PRODUCTION (cross-device sync): switch `provider` to "postgresql" and point
-// DATABASE_URL at a Neon/Supabase connection string. The models below are
-// Postgres-compatible as-is (report payload is stored as a JSON string, so no
-// SQLite/Postgres type differences).
+// PostgreSQL (Neon) for both local dev and production.
+//   DATABASE_URL — pooled connection (PgBouncer) used at runtime
+//   DIRECT_URL   — direct connection used for migrations
+// The report payload is stored as a JSON string for portability.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
