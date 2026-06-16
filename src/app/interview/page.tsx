@@ -80,6 +80,15 @@ export default function InterviewPage() {
     fetchHistory(user).then(setHistory);
   }, [user]);
 
+  // Whether a live AI provider is actually configured on the server.
+  const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then((d) => setAiConfigured(Boolean(d.aiConfigured)))
+      .catch(() => setAiConfigured(null));
+  }, []);
+
   const progress = questions.length ? Math.round((idx / questions.length) * 100) : 0;
 
   async function analyzeCv(file: File) {
@@ -281,10 +290,16 @@ export default function InterviewPage() {
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
       <div className="min-w-0">
-        {demoMode && phase !== "setup" && (
+        {aiConfigured === false && phase !== "setup" && (
           <div className="mb-5 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-2.5 text-xs text-amber-200">
-            Demo mode — running on the built-in engine. Add a{" "}
-            <code className="font-mono">GEMINI_API_KEY</code> for live AI questions, CV analysis, and feedback.
+            Demo mode — no AI key detected. Add a <code className="font-mono">GEMINI_API_KEY</code> to{" "}
+            <code className="font-mono">.env</code> and restart the server for live AI.
+          </div>
+        )}
+        {aiConfigured && demoMode && phase !== "setup" && (
+          <div className="mb-5 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs text-slate-400">
+            Heads up — a response used the offline engine (likely a brief free-tier rate limit). Live AI
+            will resume on the next request.
           </div>
         )}
         {error && (
