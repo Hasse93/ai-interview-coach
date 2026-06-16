@@ -27,7 +27,7 @@ async function getExtractor() {
 }
 
 /** Embed a string into a normalized 384-dim vector. */
-export async function embed(text: string): Promise<number[]> {
+async function embed(text: string): Promise<number[]> {
   const extractor = await getExtractor();
   const output = await extractor(text.slice(0, 2000), { pooling: "mean", normalize: true });
   return Array.from(output.data as Float32Array);
@@ -49,7 +49,7 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 /** Semantic match between two texts as a 0–100 score. */
-export async function semanticScore(a: string, b: string): Promise<number> {
+async function semanticScore(a: string, b: string): Promise<number> {
   const [va, vb] = await Promise.all([embed(a), embed(b)]);
   const sim = cosineSimilarity(va, vb);
   return Math.max(0, Math.min(100, Math.round(sim * 100)));

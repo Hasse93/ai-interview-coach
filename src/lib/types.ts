@@ -24,12 +24,6 @@ export const QuestionSchema = z.object({
 });
 export type Question = z.infer<typeof QuestionSchema>;
 
-export const QuestionsResponseSchema = z.object({
-  questions: z.array(QuestionSchema),
-  demoMode: z.boolean(),
-});
-export type QuestionsResponse = z.infer<typeof QuestionsResponseSchema>;
-
 /** Evaluate payload for a single answer. */
 export const EvaluateSchema = z.object({
   role: z.string().min(2).max(120),
@@ -89,13 +83,6 @@ export const CvAnalysisSchema = z.object({
   focusAreas: z.array(z.string()),
 });
 export type CvAnalysis = z.infer<typeof CvAnalysisSchema>;
-
-export const CvResponseSchema = z.object({
-  analysis: CvAnalysisSchema,
-  cvText: z.string(),
-  demoMode: z.boolean(),
-});
-export type CvResponse = z.infer<typeof CvResponseSchema>;
 
 /* ----------------------------- Conversation ----------------------------- */
 
