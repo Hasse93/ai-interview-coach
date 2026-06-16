@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const raw = await complete(reportPrompt(input));
+    const raw = await complete(reportPrompt(input), { json: true });
     const data = parseJson<Partial<ReportResponse>>(raw);
     const validated = ReportResponseSchema.safeParse({ ...data, demoMode: false });
     if (!validated.success) throw new Error("bad report shape");

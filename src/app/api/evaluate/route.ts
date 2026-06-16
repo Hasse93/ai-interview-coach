@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const raw = await complete(evaluatePrompt(input));
+    const raw = await complete(evaluatePrompt(input), { json: true });
     const data = parseJson<Partial<Feedback>>(raw);
     const validated = FeedbackSchema.safeParse({ ...data, demoMode: false });
     if (!validated.success) throw new Error("bad feedback shape");

@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenAI } from "@google/genai";
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
 
 export type Provider = "gemini" | "anthropic" | "none";
@@ -55,7 +55,11 @@ async function completeGemini(prompt: string, opts: CompleteOpts): Promise<strin
     model: GEMINI_MODEL,
     contents: prompt,
     config: {
-      maxOutputTokens: opts.maxTokens ?? 1400,
+      maxOutputTokens: opts.maxTokens ?? 2048,
+      // 2.5-flash "thinks" by default, eating the token budget before it
+      // emits the answer. We don't need reasoning for these structured tasks,
+      // so disable it — keeps the full budget for the actual JSON output.
+      thinkingConfig: { thinkingBudget: 0 },
       // Native JSON mode makes structured responses reliable.
       ...(opts.json ? { responseMimeType: "application/json" } : {}),
     },

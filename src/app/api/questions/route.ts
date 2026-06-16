@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const raw = await complete(questionsPrompt(setup));
+    const raw = await complete(questionsPrompt(setup), { json: true });
     const data = parseJson<{ questions: Question[] }>(raw);
     if (!Array.isArray(data.questions) || data.questions.length === 0) {
       throw new Error("empty questions");
