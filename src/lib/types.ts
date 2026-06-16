@@ -12,6 +12,7 @@ export const SetupSchema = z.object({
   seniority: z.enum(SeniorityLevels),
   interviewType: z.enum(InterviewTypes),
   jobDescription: z.string().max(5000).optional().default(""),
+  cvText: z.string().max(15000).optional().default(""),
   count: z.number().int().min(1).max(8).optional().default(5),
 });
 export type Setup = z.infer<typeof SetupSchema>;
@@ -55,6 +56,41 @@ export const FeedbackSchema = z.object({
   demoMode: z.boolean(),
 });
 export type Feedback = z.infer<typeof FeedbackSchema>;
+
+/* ----------------------------- CV analysis ----------------------------- */
+
+export const CvAnalysisSchema = z.object({
+  summary: z.string(),
+  fitScore: z.number().int().min(0).max(100),
+  strengths: z.array(z.string()),
+  weaknesses: z.array(z.string()),
+  focusAreas: z.array(z.string()),
+});
+export type CvAnalysis = z.infer<typeof CvAnalysisSchema>;
+
+export const CvResponseSchema = z.object({
+  analysis: CvAnalysisSchema,
+  cvText: z.string(),
+  demoMode: z.boolean(),
+});
+export type CvResponse = z.infer<typeof CvResponseSchema>;
+
+/* ----------------------------- Conversation ----------------------------- */
+
+export const ChatMessageSchema = z.object({
+  role: z.enum(["interviewer", "candidate"]),
+  content: z.string().min(1).max(8000),
+});
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+
+export const ChatRequestSchema = z.object({
+  role: z.string().min(2).max(120),
+  seniority: z.enum(SeniorityLevels),
+  interviewType: z.enum(InterviewTypes),
+  cvText: z.string().max(15000).optional().default(""),
+  messages: z.array(ChatMessageSchema).max(40),
+});
+export type ChatRequest = z.infer<typeof ChatRequestSchema>;
 
 /** A completed turn used to build the session report. */
 export const TurnSchema = z.object({

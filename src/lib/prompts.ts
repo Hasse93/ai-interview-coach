@@ -1,4 +1,4 @@
-import type { EvaluateInput, ReportInput, Setup } from "./types";
+import type { ChatRequest, EvaluateInput, ReportInput, Setup } from "./types";
 
 const TYPE_LABEL: Record<string, string> = {
   behavioral: "behavioral (focus on past experience, ownership, collaboration, conflict, the STAR method)",
@@ -10,14 +10,56 @@ export function questionsPrompt(setup: Setup): string {
   const jd = setup.jobDescription?.trim()
     ? `\n\nTailor the questions to this job description:\n"""\n${setup.jobDescription.trim()}\n"""`
     : "";
+  const cv = setup.cvText?.trim()
+    ? `\n\nAlso tailor to the candidate's CV — probe their real experience and likely gaps:\n"""\n${setup.cvText.trim().slice(0, 6000)}\n"""`
+    : "";
   return [
     `You are a senior interviewer hiring a ${setup.seniority} ${setup.role}.`,
     `Generate exactly ${setup.count} ${TYPE_LABEL[setup.interviewType]} interview questions.`,
     `Each question must be realistic, specific, and progressively harder.`,
     jd,
+    cv,
     `\nReturn ONLY valid JSON of the shape:`,
     `{"questions":[{"id":"q1","prompt":"...","rationale":"what the interviewer is assessing"}]}`,
     `Do not include markdown fences or any prose outside the JSON.`,
+  ].join("\n");
+}
+
+export function cvAnalysisPrompt(cvText: string, role: string, seniority: string): string {
+  return [
+    `You are an expert technical recruiter reviewing a CV for a ${seniority} ${role} role.`,
+    `\nCV:\n"""\n${cvText.slice(0, 9000)}\n"""`,
+    `\nAnalyze it honestly. Return ONLY valid JSON:`,
+    `{`,
+    `  "summary": "<2-3 sentence overall impression>",`,
+    `  "fitScore": <0-100 readiness for this role>,`,
+    `  "strengths": ["<specific strength grounded in the CV>"],`,
+    `  "weaknesses": ["<specific gap or red flag>"],`,
+    `  "focusAreas": ["<topic the candidate should prepare before interviewing>"]`,
+    `}`,
+    `No markdown, JSON only.`,
+  ].join("\n");
+}
+
+export function chatPrompt(input: ChatRequest): string {
+  const cv = input.cvText?.trim()
+    ? `\nThe candidate's CV (use it to ask relevant, personalized questions):\n"""\n${input.cvText.trim().slice(0, 4000)}\n"""`
+    : "";
+  const transcript = input.messages.length
+    ? input.messages
+        .map((m) => `${m.role === "interviewer" ? "Interviewer" : "Candidate"}: ${m.content}`)
+        .join("\n")
+    : "(the interview has not started yet)";
+  return [
+    `You are a friendly but rigorous interviewer conducting a ${input.interviewType} interview for a ${input.seniority} ${input.role}.`,
+    cv,
+    `\nRules:`,
+    `- Ask ONE question at a time.`,
+    `- Before each new question (except the first), give a brief, natural 1-sentence reaction to the candidate's last answer.`,
+    `- If the interview hasn't started, greet the candidate warmly and ask your first question.`,
+    `- Keep it conversational and human. Do not number the questions. Do not break character.`,
+    `\nTranscript so far:\n${transcript}`,
+    `\nRespond with ONLY the interviewer's next message (reaction + question), as plain text.`,
   ].join("\n");
 }
 

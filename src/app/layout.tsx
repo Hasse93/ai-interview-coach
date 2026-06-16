@@ -21,9 +21,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 Interview<span className="text-brand-400">Coach</span>
               </span>
             </a>
-            <a href="/interview" className="btn-ghost hidden sm:inline-flex">
-              Start practicing
-            </a>
+            <nav className="hidden items-center gap-2 sm:flex">
+              <a href="/dashboard" className="rounded-lg px-3 py-2 text-sm text-slate-300 transition hover:text-white">
+                Dashboard
+              </a>
+              <a href="/interview" className="btn-ghost">
+                Start practicing
+              </a>
+            </nav>
           </header>
           <main className="flex-1 pb-16">{children}</main>
           <footer className="border-t border-white/5 py-6 text-center text-xs text-slate-500">

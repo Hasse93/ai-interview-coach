@@ -1,9 +1,24 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
+
+export type Provider = "gemini" | "anthropic" | "none";
+
+/**
+ * Provider resolution order: Gemini is primary, Anthropic is the fallback,
+ * and "none" triggers the deterministic demo engine. Switch providers purely
+ * by which API key is present in the environment.
+ */
+export function activeProvider(): Provider {
+  if (process.env.GEMINI_API_KEY?.trim()) return "gemini";
+  if (process.env.ANTHROPIC_API_KEY?.trim()) return "anthropic";
+  return "none";
+}
 
 export function hasApiKey(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim());
+  return activeProvider() !== "none";
 }
 
 /**
@@ -12,11 +27,9 @@ export function hasApiKey(): boolean {
  */
 export function parseJson<T>(raw: string): T {
   const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
-  // Try a straight parse first.
   try {
     return JSON.parse(cleaned) as T;
   } catch {
-    // Fall back to the first balanced {...} or [...] slice.
     const start = cleaned.search(/[{[]/);
     const end = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
     if (start !== -1 && end > start) {
@@ -26,12 +39,35 @@ export function parseJson<T>(raw: string): T {
   }
 }
 
-/** Call Claude and return the concatenated text output. */
-export async function complete(prompt: string, maxTokens = 1400): Promise<string> {
+type CompleteOpts = { json?: boolean; maxTokens?: number };
+
+/** Call the active provider and return the model's text output. */
+export async function complete(prompt: string, opts: CompleteOpts = {}): Promise<string> {
+  const provider = activeProvider();
+  if (provider === "gemini") return completeGemini(prompt, opts);
+  if (provider === "anthropic") return completeAnthropic(prompt, opts);
+  throw new Error("No AI provider configured");
+}
+
+async function completeGemini(prompt: string, opts: CompleteOpts): Promise<string> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+  const res = await ai.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: prompt,
+    config: {
+      maxOutputTokens: opts.maxTokens ?? 1400,
+      // Native JSON mode makes structured responses reliable.
+      ...(opts.json ? { responseMimeType: "application/json" } : {}),
+    },
+  });
+  return res.text ?? "";
+}
+
+async function completeAnthropic(prompt: string, opts: CompleteOpts): Promise<string> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const msg = await client.messages.create({
-    model: MODEL,
-    max_tokens: maxTokens,
+    model: ANTHROPIC_MODEL,
+    max_tokens: opts.maxTokens ?? 1400,
     messages: [{ role: "user", content: prompt }],
   });
   return msg.content

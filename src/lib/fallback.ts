@@ -1,4 +1,6 @@
 import type {
+  ChatRequest,
+  CvAnalysis,
   EvaluateInput,
   Feedback,
   Question,
@@ -119,6 +121,59 @@ export function fallbackEvaluate(input: EvaluateInput): Feedback {
     followUp: followUps[input.interviewType] ?? followUps.behavioral,
     demoMode: true,
   };
+}
+
+const CV_SIGNALS: { label: string; re: RegExp }[] = [
+  { label: "leadership experience", re: /\b(led|managed|mentored|owned|spearheaded)\b/i },
+  { label: "quantified impact", re: /\d+\s?(%|percent|x|k\b|users|ms|hours)/i },
+  { label: "modern tech stack", re: /\b(react|node|typescript|python|aws|kubernetes|docker|go|rust|next\.?js)\b/i },
+  { label: "testing & quality", re: /\b(test|tdd|ci\/cd|coverage|jest|vitest|pytest)\b/i },
+  { label: "scale/architecture", re: /\b(microservice|distributed|scal|architecture|system design)\b/i },
+];
+
+export function fallbackCvAnalysis(cvText: string, role: string): CvAnalysis {
+  const words = cvText.trim().split(/\s+/).filter(Boolean).length;
+  const present = CV_SIGNALS.filter((s) => s.re.test(cvText));
+  const missing = CV_SIGNALS.filter((s) => !s.re.test(cvText));
+
+  let score = 40 + present.length * 9 + Math.min(words, 600) / 600 * 14;
+  score = Math.max(20, Math.min(94, Math.round(score)));
+
+  const strengths = present.length
+    ? present.map((s) => `Demonstrates ${s.label}.`)
+    : ["The CV is concise and readable."];
+  const weaknesses = missing.length
+    ? missing.slice(0, 3).map((s) => `Little evidence of ${s.label} — add concrete examples.`)
+    : ["Consider tightening bullet points to lead with impact."];
+
+  return {
+    summary: `A ${score >= 70 ? "strong" : score >= 50 ? "promising" : "developing"} profile for a ${role} role. ${present.length} of ${CV_SIGNALS.length} key signals detected. Strengthen the gaps below before interviewing.`,
+    fitScore: score,
+    strengths,
+    weaknesses,
+    focusAreas: [
+      "Prepare 2-3 STAR stories that quantify your impact.",
+      "Be ready to deep-dive on the most recent project on your CV.",
+      missing[0] ? `Brush up on ${missing[0].label}.` : "Rehearse explaining trade-offs you made.",
+    ],
+  };
+}
+
+export function fallbackChat(input: ChatRequest): string {
+  const bank = BANKS[input.interviewType] ?? BANKS.behavioral;
+  const answered = input.messages.filter((m) => m.role === "candidate").length;
+  if (answered === 0) {
+    return `Hi, thanks for joining today! I'm excited to learn more about your experience as a ${input.role}. Let's start: ${bank[0]}`;
+  }
+  const reactions = [
+    "Thanks, that's a helpful example.",
+    "Got it — I appreciate the detail.",
+    "Interesting, thanks for walking me through that.",
+    "Makes sense. Let's keep going.",
+  ];
+  const reaction = reactions[answered % reactions.length];
+  const q = bank[answered % bank.length];
+  return `${reaction} ${q}`;
 }
 
 export function fallbackReport(input: ReportInput): ReportResponse {

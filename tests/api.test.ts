@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 // Ensure demo-mode (no live API calls) for deterministic API tests.
 beforeEach(() => {
+  delete process.env.GEMINI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
 });
 
