@@ -35,7 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </header>
           <main className="flex-1 pb-16">{children}</main>
           <footer className="border-t border-white/5 py-6 text-center text-xs text-slate-500">
-            Built with Next.js · Gemini · Prisma · Tailwind — a portfolio project by Sarmini.
+            Thoughtfully engineered with Next.js, Prisma &amp; Tailwind — crafted by Hussam Sarmini.
           </footer>
         </div>
       </body>

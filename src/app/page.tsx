@@ -45,7 +45,7 @@ export default function Home() {
         <div className="animate-fade-up">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium text-slate-300">
             <span className="h-2 w-2 animate-pulse rounded-full bg-accent-400" />
-            Powered by Claude
+            Real-time AI interview coaching
           </span>
           <h1 className="mx-auto mt-6 max-w-3xl text-balance text-4xl font-bold tracking-tight sm:text-6xl">
             Ace your next interview with an{" "}

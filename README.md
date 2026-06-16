@@ -8,6 +8,14 @@ Built as a full-stack portfolio project: **Next.js 14 · TypeScript · Gemini (p
 
 ---
 
+## 🗺️ Architecture
+
+<p align="center"><img src="docs/architecture.svg" alt="AI Interview Coach architecture diagram" width="680"></p>
+
+Requests flow top-down: the React frontend calls **Next.js API routes** (every call passes through **Zod validation** + **rate limiting**), which branch into an **AI path** — Gemini primary → Claude fallback → demo engine — and a **data path** — Auth.js → Prisma → SQLite/Postgres.
+
+---
+
 ## ✨ Features
 
 | | |
@@ -141,4 +149,4 @@ The app is a stateless Next.js full-stack app, so the web/API tier auto-scales o
 
 ---
 
-Built with ❤️ by Sarmini.
+Built with ❤️ by Hussam Sarmini.
