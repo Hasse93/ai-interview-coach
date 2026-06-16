@@ -4,7 +4,9 @@ Practice realistic, role-specific job interviews with an AI coach. Upload your C
 
 Built as a full-stack portfolio project: **Next.js 14 · TypeScript · Gemini (primary) / Claude (fallback) · Tailwind CSS**.
 
-![status](https://img.shields.io/badge/tests-28%20passing-brightgreen) ![next](https://img.shields.io/badge/Next.js-14-black) ![ai](https://img.shields.io/badge/AI-Gemini%20%7C%20Claude-5b6cff)
+**▶️ Live demo: [ai-interview-coach-omega-five.vercel.app](https://ai-interview-coach-omega-five.vercel.app)**
+
+![status](https://img.shields.io/badge/tests-34%20passing-brightgreen) ![next](https://img.shields.io/badge/Next.js-14-black) ![ai](https://img.shields.io/badge/AI-Gemini%20%7C%20Claude-5b6cff) ![deploy](https://img.shields.io/badge/deployed-Vercel-black)
 
 ---
 
