@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ScoreRing } from "@/components/ScoreRing";
-import { clearHistory, type HistoryEntry } from "@/lib/storage";
+import { clearHistory, seedSampleHistory, type HistoryEntry } from "@/lib/storage";
 import { fetchHistory } from "@/lib/history";
 import { useUser } from "@/lib/useUser";
 import type { InterviewType } from "@/lib/types";
@@ -46,7 +46,13 @@ export default function DashboardPage() {
         <div className="text-4xl">📊</div>
         <h1 className="mt-4 text-2xl font-bold">No sessions yet</h1>
         <p className="mt-2 text-sm text-slate-400">Complete a mock interview and your progress will show up here.</p>
-        <a href="/interview" className="btn-primary mt-6">Start your first interview →</a>
+        <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <a href="/interview" className="btn-primary">Start your first interview →</a>
+          <button onClick={() => setHistory(seedSampleHistory())} className="btn-ghost">
+            Load sample data
+          </button>
+        </div>
+        <p className="mt-3 text-xs text-slate-500">New here? Load a sample to explore the dashboard — clear it anytime.</p>
       </div>
     );
   }
