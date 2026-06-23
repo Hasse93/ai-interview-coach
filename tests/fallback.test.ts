@@ -9,6 +9,7 @@ describe("fallbackQuestions", () => {
       seniority: "senior",
       interviewType: "technical",
       jobDescription: "",
+      cvText: "",
       count: 4,
     });
     expect(qs).toHaveLength(4);
@@ -16,7 +17,7 @@ describe("fallbackQuestions", () => {
   });
 
   it("varies questions by interview type", () => {
-    const base = { role: "PM", seniority: "mid" as const, jobDescription: "", count: 3 };
+    const base = { role: "PM", seniority: "mid" as const, jobDescription: "", cvText: "", count: 3 };
     const beh = fallbackQuestions({ ...base, interviewType: "behavioral" });
     const sys = fallbackQuestions({ ...base, interviewType: "system-design" });
     expect(beh[0].prompt).not.toEqual(sys[0].prompt);

@@ -13,7 +13,7 @@
 
 const MODEL = "Xenova/all-MiniLM-L6-v2";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// The dynamically-imported Transformers.js pipeline has no static type here.
 let extractorPromise: Promise<any> | null = null;
 
 async function getExtractor() {
